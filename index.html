@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIPCO OM Extractor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #333333;
+            line-height: 1.5;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        /* Monday.com embed optimizations */
+        .embed-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            color: #666666;
+            font-size: 13px;
+        }
+
+        .upload-section {
+            background: #fafafa;
+            border: 1px dashed #cccccc;
+            border-radius: 6px;
+            padding: 32px 16px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .upload-section:hover {
+            border-color: #000000;
+            background: #f5f5f5;
+        }
+
+        .upload-section.dragover {
+            border-color: #000000;
+            background: #f0f0f0;
+        }
+
+        .upload-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 12px;
+            border: 1px solid #cccccc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .upload-section:hover .upload-icon {
+            border-color: #000000;
+            color: #000000;
+        }
+
+        .upload-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333333;
+            margin-bottom: 4px;
+        }
+
+        .upload-subtext {
+            color: #666666;
+            font-size: 12px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: 1px solid #000000;
+            background: #ffffff;
+            color: #000000;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 4px;
+        }
+
+        .btn:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .btn-primary {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #333333;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .file-list {
+            margin-top: 16px;
+            padding: 0;
+            list-style: none;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            background: #ffffff;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .file-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            font-size: 13px;
+            color: #333333;
+        }
+
+        .file-size {
+            font-size: 11px;
+            color: #666666;
+        }
+
+        .file-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #666666;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .remove-btn:hover {
+            background: #f0f0f0;
+            color: #000000;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+
+        .status.processing {
+            background: #f5f5f5;
+            color: #333333;
+        }
+
+        .status.success {
+            background: #f8fff8;
+            color: #006600;
+            border: 1px solid #e5e5e5;
+        }
+
+        .status.error {
+            background: #fff8f8;
+            color: #cc0000;
+            border: 1px solid #e5e5e5;
+        }
+
+        .progress {
+            width: 100%;
+            height: 3px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #000000;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .extraction-summary {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .summary-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #000000;
+            font-size: 14px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #666666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Monday.com specific optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 2px 0;
+            }
+        }
+
+        /* Iframe communication styles */
+        .monday-ready {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Download link styles */
+        .download-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+        }
+
+        .download-link:hover {
+            background: #333333;
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        details summary {
+            font-size: 12px;
+            color: #666;
+            font-weight: 400;
+            outline: none;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        details[open] summary {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="embed-container monday-ready">
+        <div class="header">
+            <h1>RIPCO OM Extractor</h1>
+            <p>Upload Offering Memorandum PDFs to extract property and lease data</p>
+        </div>
+
+        <div class="upload-section" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Drop PDF files here</div>
+            <div class="upload-subtext">or click to browse</div>
+            <input type="file" id="fileInput" class="file-input" multiple accept=".pdf" />
+        </div>
+
+        <ul class="file-list" id="fileList"></ul>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div id="extractionSummary" class="extraction-summary" style="display: none;">
+            <div class="summary-title">Extraction Summary</div>
+            <div class="summary-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="propertiesCount">0</div>
+                    <div class="stat-label">Properties</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="tenantsCount">0</div>
+                    <div class="stat-label">Tenants</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="filesProcessed">0</div>
+                    <div class="stat-label">Files</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn" id="clearBtn">Clear</button>
+            <button class="btn btn-primary" id="extractBtn" disabled>Extract Data</button>
+            <button class="btn" id="exportBtn" disabled>Export CSV</button>
+        </div>
+    </div>
+
+    <script>
+        class RIPCOEmbedTool {
+            constructor() {
+                this.files = [];
+                this.extractedData = {
+                    properties: [],
+                    leaseComps: []
+                };
+                this.initializeEventListeners();
+                this.notifyMondayReady();
+            }
+
+            // Monday.com integration
+            notifyMondayReady() {
+                // Notify parent frame that the tool is ready
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'RIPCO_TOOL_READY',
+                        height: document.body.scrollHeight
+                    }, '*');
+                }
+            }
+
+            updateHeight() {
+                // Update iframe height for Monday.com
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'RIPCO_RESIZE',
+                        height: document.body.scrollHeight + 20
+                    }, '*');
+                }
+            }
+
+            initializeEventListeners() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+                const clearBtn = document.getElementById('clearBtn');
+                const extractBtn = document.getElementById('extractBtn');
+                const exportBtn = document.getElementById('exportBtn');
+
+                // Upload area click
+                uploadArea.addEventListener('click', () => fileInput.click());
+
+                // File input change
+                fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    this.handleFiles(e.dataTransfer.files);
+                });
+
+                // Buttons
+                clearBtn.addEventListener('click', () => this.clearAll());
+                extractBtn.addEventListener('click', () => this.extractData());
+                exportBtn.addEventListener('click', () => this.exportExcel());
+            }
+
+            handleFiles(files) {
+                Array.from(files).forEach(file => {
+                    if (file.type === 'application/pdf') {
+                        this.addFile(file);
+                    }
+                });
+                this.updateUI();
+            }
+
+            addFile(file) {
+                const fileId = this.generateUUID();
+                this.files.push({
+                    id: fileId,
+                    file: file,
+                    name: file.name,
+                    size: this.formatFileSize(file.size),
+                    status: 'pending'
+                });
+            }
+
+            removeFile(fileId) {
+                this.files = this.files.filter(f => f.id !== fileId);
+                this.updateUI();
+            }
+
+            updateUI() {
+                this.renderFileList();
+                this.updateButtons();
+                this.updateHeight();
+            }
+
+            renderFileList() {
+                const fileList = document.getElementById('fileList');
+                fileList.innerHTML = '';
+
+                this.files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item';
+                    li.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-icon">PDF</div>
+                            <div class="file-details">
+                                <div class="file-name">${file.name}</div>
+                                <div class="file-size">${file.size}</div>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="remove-btn" onclick="tool.removeFile('${file.id}')">×</button>
+                        </div>
+                    `;
+                    fileList.appendChild(li);
+                });
+            }
+
+            updateButtons() {
+                const extractBtn = document.getElementById('extractBtn');
+                const exportBtn = document.getElementById('exportBtn');
+                
+                extractBtn.disabled = this.files.length === 0;
+                exportBtn.disabled = this.extractedData.properties.length === 0;
+            }
+
+            clearAll() {
+                this.files = [];
+                this.extractedData = { properties: [], leaseComps: [] };
+                document.getElementById('fileInput').value = '';
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('extractionSummary').style.display = 'none';
+                this.updateUI();
+            }
+
+            async extractData() {
+                if (this.files.length === 0) return;
+
+                this.showStatus('Processing files...', 'processing');
+                
+                for (let i = 0; i < this.files.length; i++) {
+                    const file = this.files[i];
+                    await this.processFile(file, i + 1, this.files.length);
+                }
+
+                this.showStatus('Extraction completed successfully!', 'success');
+                this.showExtractionSummary();
+                this.updateButtons();
+                this.updateHeight();
+            }
+
+            async processFile(file, current, total) {
+                await this.delay(1000);
+
+                const property = this.generateMockProperty(file.name);
+                this.extractedData.properties.push(property);
+
+                const leaseComps = this.generateMockLeaseComps(property.propertyId, property.fullAddress);
+                this.extractedData.leaseComps.push(...leaseComps);
+
+                const progress = (current / total) * 100;
+                this.updateProgress(progress);
+            }
+
+            generateMockProperty(fileName) {
+                const propertyId = this.generateUUID();
+                return {
+                    propertyId,
+                    propertyName: `${fileName.replace('.pdf', '')} Shopping Center`,
+                    fullAddress: `${Math.floor(Math.random() * 9999)} Main Street, Anytown, ST 12345`,
+                    submarket: 'Downtown',
+                    gla: Math.floor(Math.random() * 50000) + 10000,
+                    lotSize: Math.floor(Math.random() * 100000) + 50000,
+                    yearBuilt: Math.floor(Math.random() * 30) + 1990,
+                    occupancyPercent: Math.floor(Math.random() * 30) + 70,
+                    noi: Math.floor(Math.random() * 500000) + 200000,
+                    askingPrice: Math.floor(Math.random() * 5000000) + 2000000,
+                    capRate: (Math.random() * 3 + 5).toFixed(2),
+                    numTenants: Math.floor(Math.random() * 10) + 5,
+                    anchorTenant: 'Major Retailer',
+                    avgRentSF: (Math.random() * 10 + 15).toFixed(2),
+                    camStructure: 'NNN',
+                    trafficCount: Math.floor(Math.random() * 20000) + 10000,
+                    highlights: 'Prime location, strong tenant mix, recent renovations'
+                };
+            }
+
+            generateMockLeaseComps(propertyId, propertyAddress) {
+                const tenants = ['Starbucks', 'Subway', 'H&R Block', 'Dry Cleaner', 'Dental Office'];
+                const comps = [];
+
+                tenants.forEach(tenant => {
+                    const sqft = Math.floor(Math.random() * 3000) + 500;
+                    const rentSF = Math.random() * 15 + 10;
+                    
+                    comps.push({
+                        compId: this.generateUUID(),
+                        tenant,
+                        sqft,
+                        rentSF: rentSF.toFixed(2),
+                        annualRent: (sqft * rentSF).toFixed(0),
+                        leaseStart: 'Jan-2020',
+                        leaseEnd: 'Dec-2025',
+                        leaseDuration: 5,
+                        yearsRemaining: 1,
+                        effectiveRentSF: rentSF.toFixed(2),
+                        propertyAddress,
+                        aggregateSF: 'Inline',
+                        dateEntered: new Date().toLocaleDateString(),
+                        propertyId,
+                        baseTermMonths: 60,
+                        floor: 'Ground Floor',
+                        source: propertyAddress.split(',')[0] + ' OM'
+                    });
+                });
+
+                return comps;
+            }
+
+            showStatus(message, type) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+                status.style.display = 'block';
+
+                if (type === 'processing') {
+                    status.innerHTML = `
+                        ${message}
+                        <div class="progress">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    `;
+                }
+                this.updateHeight();
+            }
+
+            updateProgress(percent) {
+                const progressBar = document.getElementById('progressBar');
+                if (progressBar) {
+                    progressBar.style.width = `${percent}%`;
+                }
+            }
+
+            showExtractionSummary() {
+                const summary = document.getElementById('extractionSummary');
+                document.getElementById('propertiesCount').textContent = this.extractedData.properties.length;
+                document.getElementById('tenantsCount').textContent = this.extractedData.leaseComps.length;
+                document.getElementById('filesProcessed').textContent = this.files.length;
+                summary.style.display = 'block';
+                this.updateHeight();
+            }
+
+            exportExcel() {
+                if (this.extractedData.properties.length === 0) return;
+
+                const today = new Date();
+                const dateStr = today.getFullYear() + '-' + 
+                              String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(today.getDate()).padStart(2, '0');
+                const filename = `OM_Extraction_${dateStr}.csv`;
+
+                const propertyHeaders = [
+                    'Property ID', 'Property Name', 'Full Address', 'Submarket', 'GLA (SF)', 
+                    'Lot Size', 'Year Built', 'Occupancy %', 'NOI', 'Asking Price', 
+                    'Cap Rate', '# Tenants', 'Anchor Tenant', 'Avg Rent/SF', 'CAM Structure',
+                    'Traffic Count', 'Highlights'
+                ];
+
+                const propertyRows = this.extractedData.properties.map(p => [
+                    p.propertyId, p.propertyName, p.fullAddress, p.submarket, p.gla,
+                    p.lotSize, p.yearBuilt, p.occupancyPercent, p.noi, p.askingPrice,
+                    p.capRate, p.numTenants, p.anchorTenant, p.avgRentSF, p.camStructure,
+                    p.trafficCount, p.highlights
+                ]);
+
+                const leaseHeaders = [
+                    'Comp ID', 'Tenant', 'Sq.Ft.', 'Rent/SF', 'Annual Rent', 'Lease Start',
+                    'Lease End', 'Lease Duration', 'Years Remaining', 'Effective Rent/SF',
+                    'Property Address', 'Aggregate SF', 'Date Entered', 'Property ID',
+                    'Base Term (Months)', 'Floor', 'Source'
+                ];
+
+                const leaseRows = this.extractedData.leaseComps.map(l => [
+                    l.compId, l.tenant, l.sqft, l.rentSF, l.annualRent, l.leaseStart,
+                    l.leaseEnd, l.leaseDuration, l.yearsRemaining, l.effectiveRentSF,
+                    l.propertyAddress, l.aggregateSF, l.dateEntered, l.propertyId,
+                    l.baseTermMonths, l.floor, l.source
+                ]);
+
+                const propertyCSV = this.formatCSV(propertyHeaders, propertyRows);
+                const leaseCSV = this.formatCSV(leaseHeaders, leaseRows);
+                const csvContent = 'Property Database\n' + propertyCSV + '\n\nLease Comps\n' + leaseCSV;
+
+                this.downloadViaDataURI(csvContent, filename);
+            }
+
+            downloadViaDataURI(content, filename) {
+                try {
+                    const base64Content = btoa(unescape(encodeURIComponent(content)));
+                    const dataURI = 'data:text/csv;charset=utf-8;base64,' + base64Content;
+                    
+                    const status = document.getElementById('status');
+                    status.innerHTML = `
+                        <div style="margin-bottom: 16px; font-weight: 500; color: #333; font-size: 14px;">
+                            File ready for download
+                        </div>
+                        
+                        <div style="margin-bottom: 16px; text-align: center;">
+                            <a href="${dataURI}" download="${filename}" class="download-link">
+                                ${filename}
+                            </a>
+                            <div style="font-size: 12px; color: #888; margin-top: 8px; font-weight: 400;">
+                                Right-click and select "Save Link As..."
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <details style="cursor: pointer;">
+                                <summary style="font-size: 12px; color: #666; font-weight: 400; outline: none;">
+                                    Alternative methods
+                                </summary>
+                                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                                    <button onclick="tool.copyToClipboard(\`${content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`, '${filename}')" 
+                                            style="padding: 6px 12px; background: #fff; border: 1px solid #ddd; 
+                                                   border-radius: 3px; cursor: pointer; margin-right: 8px; font-size: 12px;
+                                                   color: #333; transition: all 0.2s ease;">
+                                        Copy content
+                                    </button>
+                                    <button onclick="tool.showTextAreaFallback(\`${content.replace(/`/g, '\\`').replace(/\\/g, '\\\\')}\`, '${filename}')" 
+                                            style="padding: 6px 12px; background: #fff; border: 1px solid #ddd; 
+                                                   border-radius: 3px; cursor: pointer; font-size: 12px;
+                                                   color: #333; transition: all 0.2s ease;">
+                                        Show text
+                                    </button>
+                                </div>
+                            </details>
+                        </div>
+                        
+                        <div style="font-size: 11px; color: #999; text-align: center; padding-top: 12px; border-top: 1px solid #f0f0f0;">
+                            ${this.extractedData.properties.length} properties • ${this.extractedData.leaseComps.length} lease comparables
+                        </div>
+                    `;
+                    status.className = 'status success';
+                    status.style.display = 'block';
+                    this.updateHeight();
+                    
+                } catch (error) {
+                    this.showTextAreaFallback(content, filename);
+                }
+            }
+
+            copyToClipboard(content, filename) {
+                try {
+                    navigator.clipboard.writeText(content).then(() => {
+                        alert(`CSV content copied!\n\nPaste into Excel or text editor and save as "${filename}"`);
+                    }).catch(() => {
+                        this.showTextAreaFallback(content, filename);
+                    });
+                } catch (error) {
+                    this.showTextAreaFallback(content, filename);
+                }
+            }
+
+            showTextAreaFallback(content, filename) {
+                const status = document.getElementById('status');
+                status.innerHTML = `
+                    <div style="margin-bottom: 8px; font-weight: 500; font-size: 13px;">Copy CSV Content</div>
+                    <div style="margin-bottom: 8px; font-size: 12px; color: #666;">
+                        Select all, copy, and paste into Excel or text editor
+                    </div>
+                    <textarea onclick="this.select()" readonly 
+                              style="width: 100%; height: 120px; font-family: monospace; 
+                                     font-size: 11px; padding: 8px; border: 1px solid #ddd;
+                                     border-radius: 3px; margin: 8px 0; resize: vertical;">${content}</textarea>
+                `;
+                status.className = 'status success';
+                status.style.display = 'block';
+                this.updateHeight();
+            }
+
+            formatCSV(headers, rows) {
+                const escapeCSV = (value) => {
+                    if (value === null || value === undefined) return '';
+                    const str = String(value);
+                    if (str.includes(',') || str.includes('\n') || str.includes('\r') || str.includes('"')) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                };
+
+                let csv = headers.map(escapeCSV).join(',') + '\n';
+                rows.forEach(row => {
+                    csv += row.map(escapeCSV).join(',') + '\n';
+                });
+                return csv;
+            }
+
+            generateUUID() {
+                return Math.random().toString(36).substr(2, 8).toUpperCase();
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Initialize the tool
+        const tool = new RIPCOEmbedTool();
+
+        // Listen for messages from Monday.com
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'MONDAY_THEME_CHANGE') {
+                // Handle Monday.com theme changes if needed
+                console.log('Monday.com theme changed:', event.data.theme);
+            }
+        });
+    </script>
+</body>
+</html>
